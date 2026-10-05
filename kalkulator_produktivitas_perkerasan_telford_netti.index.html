@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Produktivitas & Analisis Perkerasan Telford (General)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                            800: '#1e3a8a',
+                            900: '#172554',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        input[readonly] {
+            background-color: #f8fafc;
+            color: #334155;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; color: black; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-12">
+
+    <!-- Header Banner -->
+    <header class="bg-gradient-to-r from-brand-900 via-brand-800 to-brand-900 text-white py-6 px-4 shadow-lg mb-6 no-print">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center space-x-2">
+                    <span class="bg-brand-500/30 text-brand-100 text-xs font-semibold px-2.5 py-0.5 rounded uppercase tracking-wider border border-brand-400/30">
+                        Aplikasi Umum / Universal
+                    </span>
+                    <span class="text-xs text-slate-300 font-mono" id="headerNoKontrak">No. Kontrak: -</span>
+                </div>
+                <h1 class="text-xl md:text-2xl font-bold mt-1.5" id="headerNamaProyek">Kalkulator & Simulasi Produktivitas Telford</h1>
+                <p class="text-slate-300 text-xs md:text-sm mt-0.5" id="headerLokasi">
+                    Alat Perencanaan & Evaluasi Tenaga Kerja Jalan Perkerasan Telford / Batu Belah
+                </p>
+            </div>
+            
+            <!-- Preset Dropdown & Target Summary Badge -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                <div class="bg-white/10 backdrop-blur-md rounded-lg p-2.5 border border-white/20 text-xs text-white">
+                    <label class="block text-[11px] text-brand-200 font-semibold mb-1">Muat Template Proyek:</label>
+                    <select id="presetSelector" onchange="muatPresetProyek()" class="bg-slate-800 text-white text-xs rounded px-2.5 py-1.5 border border-brand-400/40 focus:outline-none w-full">
+                        <option value="custom">✏️ Custom / Proyek Sendiri</option>
+                        <option value="krayan" selected>📌 Studi Kasus Krayan (1.656 m³ - 60 Hari)</option>
+                        <option value="desa">🌾 Proyek Jalan Desa (500 m³ - 30 Hari)</option>
+                        <option value="kabupaten">🛣️ Proyek Kab. Skala Besar (3.000 m³ - 90 Hari)</option>
+                    </select>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/10 text-right min-w-[200px]">
+                    <div class="text-[11px] text-brand-200 uppercase tracking-wider font-semibold">Plafon Anggaran Upah</div>
+                    <div class="text-lg font-bold text-amber-300" id="headerAnggaranKontrak">Rp 168.425.879</div>
+                    <div class="text-[11px] text-slate-300" id="headerTargetSummary">Target: 1.656 m³ / 60 Hari</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 mb-6 no-print">
+        <div class="flex border-b border-slate-300 space-x-2 overflow-x-auto">
+            <button onclick="switchTab('simulasi')" id="tab-simulasi" class="tab-btn px-4 py-2.5 font-semibold text-sm border-b-2 border-brand-600 text-brand-700 focus:outline-none transition flex items-center space-x-2 whitespace-nowrap">
+                <span>🧮 Simulasi & Kalkulator</span>
+            </button>
+            <button onclick="switchTab('fishbone')" id="tab-fishbone" class="tab-btn px-4 py-2.5 font-semibold text-sm border-b-2 border-transparent text-slate-600 hover:text-brand-600 focus:outline-none transition flex items-center space-x-2 whitespace-nowrap">
+                <span>🐟 Diagnosa Fishbone (Ishikawa)</span>
+            </button>
+            <button onclick="switchTab('strategi')" id="tab-strategi" class="tab-btn px-4 py-2.5 font-semibold text-sm border-b-2 border-transparent text-slate-600 hover:text-brand-600 focus:outline-none transition flex items-center space-x-2 whitespace-nowrap">
+                <span>💡 Strategi & Metodologi</span>
+            </button>
+            <button onclick="switchTab('monitoring')" id="tab-monitoring" class="tab-btn px-4 py-2.5 font-semibold text-sm border-b-2 border-transparent text-slate-600 hover:text-brand-600 focus:outline-none transition flex items-center space-x-2 whitespace-nowrap">
+                <span>📋 Format Monitoring & Cetak</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="max-w-7xl mx-auto px-4">
+        
+        <!-- TAB 1: SIMULASI & KALKULATOR -->
+        <div id="content-simulasi" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- LEFT COLUMN: INPUT CONTROLS -->
+            <section class="lg:col-span-5 space-y-5 no-print">
+                
+                <!-- Card 0: Informasi Proyek -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                    <div class="flex items-center space-x-2 border-b border-slate-100 pb-2.5 mb-3">
+                        <span class="w-6 h-6 rounded-md bg-slate-800 text-white flex items-center justify-center font-bold text-xs">0</span>
+                        <h2 class="font-bold text-slate-800 text-sm">Informasi Identitas Proyek</h2>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <div>
+                            <label class="block font-medium text-slate-700 mb-0.5">Nama Proyek / Ruas Jalan</label>
+                            <input type="text" id="inputNamaProyek" value="Peningkatan Jalan Simpang Pa’Betung – Air Terjun Pa’Ramayo" oninput="updateIdentitasProyek()" 
+                                class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block font-medium text-slate-700 mb-0.5">Nomor SPK / Kontrak</label>
+                                <input type="text" id="inputNoKontrak" value="620/43/56/SPK/DPU-BM/VIII/2016" oninput="updateIdentitasProyek()" 
+                                    class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-medium text-slate-700 mb-0.5">Lokasi / Wilayah</label>
+                                <input type="text" id="inputLokasi" value="Kec. Krayan, Kab. Nunukan" oninput="updateIdentitasProyek()" 
+                                    class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 1: Parameter Kontrak & AHSP -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                    <div class="flex items-center space-x-2 border-b border-slate-100 pb-2.5 mb-3">
+                        <span class="w-6 h-6 rounded-md bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-xs">1</span>
+                        <h2 class="font-bold text-slate-800 text-sm">Parameter Kontrak & AHSP</h2>
+                    </div>
+                    
+                    <div class="space-y-2.5 text-xs">
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block font-medium text-slate-700 mb-0.5">Volume Pekerjaan (m³)</label>
+                                <input type="number" id="volume" value="1656.09" step="0.01" oninput="hitungSimulasi()" 
+                                    class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none font-semibold">
+                            </div>
+                            <div>
+                                <label class="block font-medium text-slate-700 mb-0.5">Waktu Rencana (Hari)</label>
+                                <input type="number" id="durasiRencana" value="60" oninput="hitungSimulasi()" 
+                                    class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none font-semibold">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-medium text-slate-700 mb-0.5">Target Min. Harian Proyek (m³/hari)</label>
+                            <input type="text" id="targetHarianInput" readonly 
+                                class="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-bold text-brand-700 bg-slate-50">
+                        </div>
+
+                        <!-- AHSP Coefficients Section -->
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-2">
+                            <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Koefisien AHSP & Tarif Upah</span>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[11px] text-slate-600">Pekerja (OH/m³)</label>
+                                    <input type="number" id="koefAhspPekerja" value="0.9922" step="0.0001" oninput="hitungSimulasi()"
+                                        class="w-full px-2 py-1 border border-slate-300 rounded text-xs font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-slate-600">Mandor (OH/m³)</label>
+                                    <input type="number" id="koefAhspMandor" value="0.0992" step="0.0001" oninput="hitungSimulasi()"
+                                        class="w-full px-2 py-1 border border-slate-300 rounded text-xs font-mono">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200">
+                                <div>
+                                    <label class="block text-[11px] text-slate-600">Upah Pekerja (Rp/OH)</label>
+                                    <input type="number" id="upahPekerja" value="90000" step="1000" oninput="hitungSimulasi()"
+                                        class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-slate-600">Upah Mandor (Rp/OH)</label>
+                                    <input type="number" id="upahMandor" value="125000" step="1000" oninput="hitungSimulasi()"
+                                        class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-0.5">
+                                <label class="block font-medium text-slate-700">Total Plafon Anggaran Upah Kontrak</label>
+                                <label class="inline-flex items-center space-x-1 text-[10px] text-brand-700 cursor-pointer">
+                                    <input type="checkbox" id="chkAutoBudget" checked onchange="toggleAutoBudget()" class="rounded text-brand-600">
+                                    <span>Hitung Otomatis (AHSP)</span>
+                                </label>
+                            </div>
+                            <input type="number" id="anggaranKontrakInput" value="168425879" oninput="hitungSimulasi()" readonly
+                                class="w-full px-3 py-1.5 border border-slate-300 rounded-lg font-bold text-slate-800 text-xs bg-amber-50">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Formasi Awal (Pengamatan Baseline) -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                    <div class="flex items-center space-x-2 border-b border-slate-100 pb-2.5 mb-3">
+                        <span class="w-6 h-6 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-xs">2</span>
+                        <h2 class="font-bold text-slate-800 text-sm">Formasi Awal (Baseline Eksisting)</h2>
+                    </div>
+
+                    <div class="space-y-2.5 text-xs">
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block font-medium text-slate-700 mb-0.5">Jumlah Pekerja</label>
+                                <input type="number" id="awalPekerja" value="20" oninput="hitungSimulasi()"
+                                    class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-medium text-slate-700 mb-0.5">Jumlah Mandor</label>
+                                <input type="number" id="awalMandor" value="2" oninput="hitungSimulasi()"
+                                    class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-700 mb-0.5">Produktivitas Realisasi Lapangan (m³/hari)</label>
+                            <input type="number" id="awalProdHarian" value="18.30" step="0.1" oninput="hitungSimulasi()"
+                                class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none font-semibold text-rose-700">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Formasi Usulan (Rencana Optimalisasi) -->
+                <div class="bg-white rounded-xl shadow-sm border border-brand-200 p-4 ring-2 ring-brand-500/10">
+                    <div class="flex items-center space-x-2 border-b border-slate-100 pb-2.5 mb-3">
+                        <span class="w-6 h-6 rounded-md bg-brand-600 text-white flex items-center justify-center font-bold text-xs">3</span>
+                        <h2 class="font-bold text-slate-800 text-sm">Formasi Usulan / Rencana Perbaikan</h2>
+                    </div>
+
+                    <div class="space-y-2.5 text-xs">
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block font-medium text-slate-700 mb-0.5">Pekerja Usulan</label>
+                                <input type="number" id="simPekerja" value="28" oninput="hitungSimulasi()"
+                                    class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none font-semibold">
+                            </div>
+                            <div>
+                                <label class="block font-medium text-slate-700 mb-0.5">Mandor Usulan</label>
+                                <input type="number" id="simMandor" value="2" oninput="hitungSimulasi()"
+                                    class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none font-semibold">
+                            </div>
+                        </div>
+
+                        <div class="bg-brand-50/60 p-2.5 rounded-lg border border-brand-100 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-semibold text-brand-800 uppercase tracking-wider block">Target Prod. Individu</span>
+                                <label class="inline-flex items-center space-x-1 text-[11px] text-brand-900 cursor-pointer font-medium">
+                                    <input type="checkbox" id="chkSyncTarget" checked onchange="toggleSyncTarget()" class="rounded text-brand-600 focus:ring-brand-500">
+                                    <span>Sync Kebutuhan Target</span>
+                                </label>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[11px] text-slate-700">Pekerja (m³/org/hari)</label>
+                                    <input type="number" id="koefProdPekerja" value="0.9857" step="0.0001" oninput="hitungSimulasi()" readonly
+                                        class="w-full px-2 py-1 border border-slate-300 rounded text-xs font-mono font-semibold text-brand-900 bg-slate-100">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-slate-700">Perubahan vs Baseline</label>
+                                    <input type="text" id="persenKenaikanDisplay" readonly
+                                        class="w-full px-2 py-1 border border-slate-200 rounded text-xs font-bold text-emerald-700 bg-emerald-50">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-medium text-slate-700 mb-0.5">Total Prod. Usulan Kelompok (m³/hari)</label>
+                            <input type="text" id="simProdHarianDisplay" readonly 
+                                class="w-full px-3 py-1.5 border border-brand-200 rounded-lg font-bold text-brand-700 text-sm bg-brand-50">
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- RIGHT COLUMN: RESULTS & COMPARISON -->
+            <section class="lg:col-span-7 space-y-5">
+                
+                <!-- Target Summary Banner -->
+                <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-xl p-4 shadow-sm border border-slate-700 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div>
+                        <span class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider block">Target Produktivitas Proyek</span>
+                        <div class="text-2xl font-bold text-amber-400 mt-0.5" id="bannerTargetHarian">27,60 m³/hari</div>
+                        <p class="text-xs text-slate-300 mt-0.5" id="bannerTargetFormula">Berdasarkan Volume / Durasi Rencana</p>
+                    </div>
+                    <div class="text-right border-t md:border-t-0 md:border-l border-slate-700 pt-3 md:pt-0 md:pl-6 w-full md:w-auto">
+                        <span class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider block">Kapasitas Formasi Usulan</span>
+                        <div class="text-2xl font-bold text-emerald-400 mt-0.5" id="bannerUsulanHarian">27,60 m³/hari</div>
+                        <p class="text-xs text-emerald-400 mt-0.5 font-medium" id="bannerStatusKapasitas">Memenuhi Target (100%)</p>
+                    </div>
+                </div>
+
+                <!-- Summary Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <!-- Baseline Card -->
+                    <div class="bg-white rounded-xl border border-rose-200 p-4 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1.5 h-full bg-rose-500"></div>
+                        <div class="pl-2">
+                            <span class="text-xs font-bold text-rose-600 uppercase tracking-wider" id="cardAwalHeader">FORMASI AWAL</span>
+                            
+                            <div class="mt-2">
+                                <span class="text-[11px] text-slate-500 block">Waktu Penyelesaian Realistis</span>
+                                <div class="text-xl font-bold text-slate-800" id="cardAwalWaktu">90,5 Hari</div>
+                                <div id="badgeAwalWaktu" class="mt-0.5">
+                                    <span class="inline-block bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded">TERLAMBAT</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 pt-2.5 border-t border-slate-100">
+                                <span class="text-[11px] text-slate-500 block">Total Biaya Tenaga Kerja Realisasi</span>
+                                <div class="text-base font-bold text-rose-700" id="cardAwalBiaya">Rp 185.525.000</div>
+                                <div id="badgeAwalBiaya" class="mt-0.5">
+                                    <span class="inline-block bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded">OVER BUDGET</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Proposed Summary Card -->
+                    <div class="bg-white rounded-xl border border-brand-200 p-4 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1.5 h-full bg-brand-600"></div>
+                        <div class="pl-2">
+                            <span class="text-xs font-bold text-brand-600 uppercase tracking-wider" id="cardUsulanHeader">FORMASI USULAN</span>
+                            
+                            <div class="mt-2">
+                                <span class="text-[11px] text-slate-500 block">Waktu Penyelesaian Realistis</span>
+                                <div class="text-xl font-bold text-slate-800" id="cardUsulanWaktu">60,0 Hari</div>
+                                <div id="badgeUsulanWaktu" class="mt-0.5">
+                                    <span class="inline-block bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded">TEPAT WAKTU</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 pt-2.5 border-t border-slate-100">
+                                <span class="text-[11px] text-slate-500 block">Total Biaya Tenaga Kerja Realisasi</span>
+                                <div class="text-base font-bold text-emerald-700" id="cardUsulanBiaya">Rp 166.200.000</div>
+                                <div id="badgeUsulanBiaya" class="mt-0.5">
+                                    <span class="inline-block bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded">HEMAT / SISA</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Detailed Perbandingan Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                    <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-3 pb-2 border-b border-slate-100">
+                        Tabel Matriks Perbandingan Skenario Proyek
+                    </h3>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700">
+                                    <th class="p-2 border border-slate-200 font-semibold">Parameter Analisis</th>
+                                    <th class="p-2 border border-slate-200 font-semibold text-rose-700">Formasi Baseline (Awal)</th>
+                                    <th class="p-2 border border-slate-200 font-semibold text-brand-700">Formasi Usulan (Rencana)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 text-slate-700">
+                                <tr>
+                                    <td class="p-2 border border-slate-200 font-medium">Jumlah Pekerja / Mandor</td>
+                                    <td class="p-2 border border-slate-200" id="tblAwalFormasi">20 Pekerja / 2 Mandor</td>
+                                    <td class="p-2 border border-slate-200 font-semibold" id="tblUsulanFormasi">28 Pekerja / 2 Mandor</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 border border-slate-200 font-medium">Produktivitas Harian Total</td>
+                                    <td class="p-2 border border-slate-200" id="tblAwalProd">18,30 m³/hari</td>
+                                    <td class="p-2 border border-slate-200 font-semibold text-brand-700" id="tblUsulanProd">27,60 m³/hari</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 border border-slate-200 font-medium">Produktivitas per Pekerja</td>
+                                    <td class="p-2 border border-slate-200" id="tblAwalProdIndiv">0,915 m³/orang/hari</td>
+                                    <td class="p-2 border border-slate-200 font-semibold" id="tblUsulanProdIndiv">0,986 m³/orang/hari</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 border border-slate-200 font-medium">Tuntutan Kenaikan Prod. Individu</td>
+                                    <td class="p-2 border border-slate-200 text-slate-500">Baseline Eksisting</td>
+                                    <td class="p-2 border border-slate-200 font-bold text-emerald-600" id="tblKenaikanProd">+7,7%</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 border border-slate-200 font-medium">Biaya Upah Harian Total</td>
+                                    <td class="p-2 border border-slate-200" id="tblAwalBiayaHarian">Rp 2.050.000 / hari</td>
+                                    <td class="p-2 border border-slate-200 font-semibold" id="tblUsulanBiayaHarian">Rp 2.770.000 / hari</td>
+                                </tr>
+                                <tr class="bg-slate-50">
+                                    <td class="p-2 border border-slate-200 font-medium">Waktu Penyelesaian Proyek</td>
+                                    <td class="p-2 border border-slate-200 font-bold text-rose-600" id="tblAwalWaktu">90,50 Hari</td>
+                                    <td class="p-2 border border-slate-200 font-bold text-emerald-600" id="tblUsulanWaktu">60,00 Hari</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 border border-slate-200 font-medium">Potensi Keterlambatan</td>
+                                    <td class="p-2 border border-slate-200 text-rose-600 font-medium" id="tblAwalHariTerlambat">+30,50 Hari</td>
+                                    <td class="p-2 border border-slate-200 text-emerald-600 font-medium" id="tblUsulanHariTerlambat">0 Hari (Tepat Waktu)</td>
+                                </tr>
+                                <tr class="bg-slate-100 font-bold">
+                                    <td class="p-2 border border-slate-200 text-slate-800">Total Biaya Tenaga Kerja Realisasi</td>
+                                    <td class="p-2 border border-slate-200 text-rose-700" id="tblAwalBiayaTotal">Rp 185.525.000</td>
+                                    <td class="p-2 border border-slate-200 text-brand-700" id="tblUsulanBiayaTotal">Rp 166.200.000</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 border border-slate-200 font-medium">Deviasi vs Plafon Anggaran Kontrak</td>
+                                    <td class="p-2 border border-slate-200 font-semibold text-rose-600" id="tblAwalDeviasi">+Rp 17.099.121 (Pembengkakan)</td>
+                                    <td class="p-2 border border-slate-200 font-semibold text-emerald-600" id="tblUsulanDeviasi">Sisa Rp 2.225.879 (Hemat)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100 text-xs text-blue-800 space-y-1">
+                        <p class="font-bold">💡 Kesimpulan & Executive Summary:</p>
+                        <p id="textKesimpulan" class="leading-relaxed">
+                            Memuat analisis...
+                        </p>
+                    </div>
+                </div>
+
+            </section>
+
+        </div>
+
+        <!-- TAB 2: DIAGNOSA FISHBONE INTERAKTIF -->
+        <div id="content-fishbone" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4 border-b border-slate-100 pb-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Diagnosa Kendala Produktivitas (Diagram Fishbone / Ishikawa)</h2>
+                        <p class="text-xs text-slate-500">Centang faktor-faktor kendala yang relevan di lapangan proyek Anda untuk mengidentifikasi akar masalah produktivitas rendah:</p>
+                    </div>
+                    <span class="text-xs font-semibold bg-amber-100 text-amber-800 px-3 py-1 rounded-full w-fit">Modul Audit Lapangan</span>
+                </div>
+
+                <!-- Fishbone Interactive Checklist Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                    
+                    <!-- MAN -->
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                        <div class="flex items-center justify-between font-bold text-brand-800 border-b border-slate-200 pb-1.5">
+                            <span class="flex items-center space-x-1.5">
+                                <span class="w-5 h-5 rounded bg-brand-200 text-brand-800 flex items-center justify-center text-[10px]">1</span>
+                                <span>MAN (Tenaga Kerja)</span>
+                            </span>
+                        </div>
+                        <div class="space-y-1.5 text-slate-600">
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" checked class="mt-0.5 rounded text-brand-600">
+                                <span>Jumlah tenaga kerja kurang dari kebutuhan AHSP</span>
+                            </label>
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" checked class="mt-0.5 rounded text-brand-600">
+                                <span>Kurangnya keterampilan penyusunan & penguncian batu Telford</span>
+                            </label>
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" class="mt-0.5 rounded text-brand-600">
+                                <span>Kelelahan tinggi akibat durasi jam kerja tidak teratur</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- METHOD -->
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                        <div class="flex items-center justify-between font-bold text-brand-800 border-b border-slate-200 pb-1.5">
+                            <span class="flex items-center space-x-1.5">
+                                <span class="w-5 h-5 rounded bg-brand-200 text-brand-800 flex items-center justify-center text-[10px]">2</span>
+                                <span>METHOD (Metode Kerja)</span>
+                            </span>
+                        </div>
+                        <div class="space-y-1.5 text-slate-600">
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" checked class="mt-0.5 rounded text-brand-600">
+                                <span>Pembagian tugas belum spesifik (pekerja sering berpindah peran)</span>
+                            </label>
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" checked class="mt-0.5 rounded text-brand-600">
+                                <span>Penataan *work front* terlalu padat / *crowding*</span>
+                            </label>
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" class="mt-0.5 rounded text-brand-600">
+                                <span>Metode pemasangan batu belum tersinkronisasi antar kelompok</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- MATERIAL -->
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                        <div class="flex items-center justify-between font-bold text-brand-800 border-b border-slate-200 pb-1.5">
+                            <span class="flex items-center space-x-1.5">
+                                <span class="w-5 h-5 rounded bg-brand-200 text-brand-800 flex items-center justify-center text-[10px]">3</span>
+                                <span>MATERIAL (Pasokan Batu)</span>
+                            </span>
+                        </div>
+                        <div class="space-y-1.5 text-slate-600">
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" checked class="mt-0.5 rounded text-brand-600">
+                                <span>Terlambatnya pasokan batu pokok/pengunci ke titik kerja</span>
+                            </label>
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" class="mt-0.5 rounded text-brand-600">
+                                <span>Ukuran batu heterogen sehingga memakan waktu pemilahan</span>
+                            </label>
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" class="mt-0.5 rounded text-brand-600">
+                                <span>Penumpukan material terlalu jauh dari posisi pekerja</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- MACHINE / TOOLS -->
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                        <div class="flex items-center justify-between font-bold text-brand-800 border-b border-slate-200 pb-1.5">
+                            <span class="flex items-center space-x-1.5">
+                                <span class="w-5 h-5 rounded bg-brand-200 text-brand-800 flex items-center justify-center text-[10px]">4</span>
+                                <span>TOOLS (Peralatan Bantu)</span>
+                            </span>
+                        </div>
+                        <div class="space-y-1.5 text-slate-600">
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" checked class="mt-0.5 rounded text-brand-600">
+                                <span>Jumlah palu batu, linggis, dan gerobak dorong terbatas</span>
+                            </label>
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" class="mt-0.5 rounded text-brand-600">
+                                <span>Kondisi alat bantu rusak/tumpul tidak segera diganti</span>
+                            </label>
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" class="mt-0.5 rounded text-brand-600">
+                                <span>Keterbatasan mesin pemadat / stamper / roller pengunci</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- ENVIRONMENT -->
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                        <div class="flex items-center justify-between font-bold text-brand-800 border-b border-slate-200 pb-1.5">
+                            <span class="flex items-center space-x-1.5">
+                                <span class="w-5 h-5 rounded bg-brand-200 text-brand-800 flex items-center justify-center text-[10px]">5</span>
+                                <span>ENVIRONMENT (Lingkungan)</span>
+                            </span>
+                        </div>
+                        <div class="space-y-1.5 text-slate-600">
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" class="mt-0.5 rounded text-brand-600">
+                                <span>Faktor cuaca hujan yang melicinkan akses kerja</span>
+                            </label>
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" class="mt-0.5 rounded text-brand-600">
+                                <span>Medan lokasi terisolir / akses pengangkutan sulit</span>
+                            </label>
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" class="mt-0.5 rounded text-brand-600">
+                                <span>Kemiringan medan ekstrem yang menyulitkan lanskap</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- MANAGEMENT -->
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                        <div class="flex items-center justify-between font-bold text-brand-800 border-b border-slate-200 pb-1.5">
+                            <span class="flex items-center space-x-1.5">
+                                <span class="w-5 h-5 rounded bg-brand-200 text-brand-800 flex items-center justify-center text-[10px]">6</span>
+                                <span>MANAGEMENT (Pengawasan)</span>
+                            </span>
+                        </div>
+                        <div class="space-y-1.5 text-slate-600">
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" checked class="mt-0.5 rounded text-brand-600">
+                                <span>Target harian belum diturunkan secara mendetail per kelompok</span>
+                            </label>
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" class="mt-0.5 rounded text-brand-600">
+                                <span>Pengawasan mutu tidak dilakukan langsung (memicu pembongkaran)</span>
+                            </label>
+                            <label class="flex items-start space-x-2 cursor-pointer">
+                                <input type="checkbox" class="mt-0.5 rounded text-brand-600">
+                                <span>Absensi dan keterlambatan pekerja tidak terpantau ketat</span>
+                            </label>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: STRATEGI OPTIMALISASI GENERAL -->
+        <div id="content-strategi" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h2 class="text-lg font-bold text-slate-800 mb-2">Prinsip & Alternatif Optimalisasi Perkerasan Telford</h2>
+                <p class="text-xs text-slate-600 mb-4">
+                    Dalam manajemen konstruksi padat karya, memburu keterlambatan target dapat dilakukan melalui 3 skenario pendekatan utama:
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs my-4">
+                    <div class="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
+                        <span class="font-bold text-slate-800 block text-sm">Skenario A: Tambah Pekerja Masif</span>
+                        <p class="text-slate-600 leading-relaxed">
+                            Menambah jumlah pekerja tanpa membenahi metode kerja. Berisiko tinggi memicu *crowding effect* (kepadatan berlebih pada lokasi kerja yang terbatas) serta membengkakkan biaya upah harian secara drastis.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
+                        <span class="font-bold text-slate-800 block text-sm">Skenario B: Tuntut Produktivitas Ekstrem</span>
+                        <p class="text-slate-600 leading-relaxed">
+                            Mempertahankan formasi pekerja minim tetapi menuntut lonjakan produktivitas individu tinggi (>30%-50%). Skenario ini kurang realistis di lapangan dan berisiko memicu kelelahan fisik pekerja.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 bg-brand-50 rounded-lg border border-brand-200 space-y-1.5">
+                        <span class="font-bold text-brand-800 block text-sm">Skenario C (Rekomendasi): Penyesuaian Moderat + Metode</span>
+                        <p class="text-brand-900 leading-relaxed">
+                            Mengkombinasikan penambahan jumlah pekerja yang pas sesuai kapasitas *work front* dengan peningkatan produktivitas individu yang rasional (5%-15%) melalui perbaikan metode kerja dan suplai material.
+                        </p>
+                    </div>
+                </div>
+
+                <h3 class="font-bold text-slate-800 text-sm mt-6 mb-2">6 Pilar Langkah Kerja Optimalisasi Lapangan:</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-700">
+                    <div class="p-3 bg-slate-50 rounded border border-slate-200">
+                        <strong class="text-brand-800">1. Pembagian Tugas Spesifik (Spesialisasi):</strong> Membagi kelompok kerja menjadi sub-tim: penumpuk batu, pemilah ukuran, penyusun batu utama, dan pengunci (spesi batu kecil).
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded border border-slate-200">
+                        <strong class="text-brand-800">2. Drop Material Tepat Waktu:</strong> Memastikan pasokan batu diletakkan di dekat *work front* sebelum jam kerja dimulai untuk meminimalkan waktu tunggu pekerja.
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded border border-slate-200">
+                        <strong class="text-brand-800">3. Pengaturan Ruang Gerak (*Work Front*):</strong> Mengatur jarak antar kelompok agar pekerja bergerak leluasa tanpa saling menghalangi.
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded border border-slate-200">
+                        <strong class="text-brand-800">4. Target Harian per Kelompok:</strong> Membagi target total proyek menjadi target harian per kelompok kerja yang terukur dan dievaluasi setiap sore hari.
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded border border-slate-200">
+                        <strong class="text-brand-800">5. Pengawasan Langsung Mandor:</strong> Mandor memeriksa kelurusan, kepadatan, dan penguncian batu saat dipasang untuk mencegah pembongkaran ulang.
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded border border-slate-200">
+                        <strong class="text-brand-800">6. Kelengkapan Tools & APD K3:</strong> Mengatur kecukupan jumlah palu, linggis, dan gerobak dorong serta perlengkapan APD keselamatan kerja.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: FORMAT MONITORING & CETAK LAPORAN -->
+        <div id="content-monitoring" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-4 no-print">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Ringkasan Laporan Operasional & Target K3 Proyek</h2>
+                        <p class="text-xs text-slate-500">Format acuan pengawasan harian yang terintegrasi dengan data input kalkulator Anda:</p>
+                    </div>
+                    <button onclick="window.print()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold shadow flex items-center space-x-1.5 transition">
+                        <span>🖨️ Cetak / Simpan PDF</span>
+                    </button>
+                </div>
+
+                <!-- Printable Report Header -->
+                <div class="hidden print-only mb-6 text-center border-b pb-4">
+                    <h1 class="text-xl font-bold uppercase" id="printJudulProyek">LAPORAN MONITORING PRODUKTIVITAS TELFORD</h1>
+                    <p class="text-sm" id="printSubProyek">No. Kontrak: - | Lokasi: -</p>
+                </div>
+
+                <!-- Dynamic Monitoring Table -->
+                <div class="max-w-2xl mx-auto overflow-x-auto mb-6">
+                    <table class="w-full text-xs text-left border-collapse border border-slate-300">
+                        <thead>
+                            <tr class="bg-brand-900 text-white">
+                                <th class="p-2.5 border border-slate-300">Parameter Monitoring Proyek</th>
+                                <th class="p-2.5 border border-slate-300">Nilai Target / Operasional</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 text-slate-700">
+                            <tr>
+                                <td class="p-2 border border-slate-200 font-medium">Nama Proyek / Ruas Jalan</td>
+                                <td class="p-2 border border-slate-200 font-bold" id="repNamaProyek">-</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 border border-slate-200 font-medium">Volume Pekerjaan Total</td>
+                                <td class="p-2 border border-slate-200 font-bold" id="repVolume">-</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 border border-slate-200 font-medium">Durasi Pelaksanaan Rencana</td>
+                                <td class="p-2 border border-slate-200 font-bold" id="repDurasi">-</td>
+                            </tr>
+                            <tr class="bg-amber-50">
+                                <td class="p-2 border border-slate-200 font-medium">Target Produktivitas Harian Minimum Total</td>
+                                <td class="p-2 border border-slate-200 font-bold text-amber-800" id="repTargetHarian">-</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 border border-slate-200 font-medium">Rencana Formasi Pekerja Usulan</td>
+                                <td class="p-2 border border-slate-200 font-bold" id="repFormasiUsulan">-</td>
+                            </tr>
+                            <tr class="bg-emerald-50">
+                                <td class="p-2 border border-slate-200 font-medium">Target Min. Produktivitas per Pekerja</td>
+                                <td class="p-2 border border-slate-200 font-bold text-emerald-800" id="repProdPekerja">-</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 border border-slate-200 font-medium">Estimasi Biaya Upah Realisasi Rencana Usulan</td>
+                                <td class="p-2 border border-slate-200 font-bold" id="repBiayaUsulan">-</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 border border-slate-200 font-medium">Plafon Anggaran Upah Kontrak</td>
+                                <td class="p-2 border border-slate-200 font-bold text-brand-800" id="repAnggaranKontrak">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- K3 & Lingkungan -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-4 border-t border-slate-200">
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <h4 class="font-bold text-slate-800 mb-2">Aspek K3 Konstruksi (Keselamatan Kerja)</h4>
+                        <ul class="list-disc list-inside space-y-1 text-slate-600">
+                            <li>Wajib APD Standar: Helm proyek, Sepatu Safety/Boots, Sarung Tangan Kulit.</li>
+                            <li>Toolbox Meeting / Safety Briefing harian sebelum pekerjaan dimulai.</li>
+                            <li>Prosedur manual lifting (pengangkatan batu) yang aman untuk mencegah cidera otot.</li>
+                            <li>Penyediaan kotak P3K lengkap di pos komando/lapangan.</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <h4 class="font-bold text-slate-800 mb-2">Aspek Lingkungan Kerja</h4>
+                        <ul class="list-disc list-inside space-y-1 text-slate-600">
+                            <li>Penataan sisa pecahan batu agar tidak menyumbat saluran drainase eksisting.</li>
+                            <li>Penyediaan ruang jalan darurat bagi kendaraan lokal saat penumpukan material batu.</li>
+                            <li>Pembersihan dan kerapihan *work front* setiap selesai jam kerja harian.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Preset Data Store
+        const presets = {
+            custom: {
+                nama: "Proyek Perkerasan Telford (Custom)",
+                nokontrak: "001/SPK/KONTRAK/2026",
+                lokasi: "Wilayah Proyek",
+                volume: 1000,
+                durasi: 45,
+                koefPekerja: 0.9922,
+                koefMandor: 0.0992,
+                upahPekerja: 90000,
+                upahMandor: 125000,
+                awalPekerja: 15,
+                awalMandor: 1,
+                awalProd: 12.0,
+                simPekerja: 22,
+                simMandor: 2
+            },
+            krayan: {
+                nama: "Peningkatan Jalan Simpang Pa’Betung – Air Terjun Pa’Ramayo",
+                nokontrak: "620/43/56/SPK/DPU-BM/VIII/2016",
+                lokasi: "Kec. Krayan, Kab. Nunukan",
+                volume: 1656.09,
+                durasi: 60,
+                koefPekerja: 0.9922,
+                koefMandor: 0.0992,
+                upahPekerja: 90000,
+                upahMandor: 125000,
+                awalPekerja: 20,
+                awalMandor: 2,
+                awalProd: 18.30,
+                simPekerja: 28,
+                simMandor: 2
+            },
+            desa: {
+                nama: "Pembangunan Jalan Usaha Tani / Telford Desa",
+                nokontrak: "412/05/DD/2026",
+                lokasi: "Kecamatan Pedesaan",
+                volume: 500,
+                durasi: 30,
+                koefPekerja: 0.9922,
+                koefMandor: 0.0992,
+                upahPekerja: 85000,
+                upahMandor: 115000,
+                awalPekerja: 10,
+                awalMandor: 1,
+                awalProd: 11.0,
+                simPekerja: 16,
+                simMandor: 1
+            },
+            kabupaten: {
+                nama: "Preservasi & Peningkatan Jalan Kabupaten",
+                nokontrak: "600/12/SPK/BM/2026",
+                lokasi: "Jalur Utama Kabupaten",
+                volume: 3000,
+                durasi: 90,
+                koefPekerja: 0.9922,
+                koefMandor: 0.0992,
+                upahPekerja: 100000,
+                upahMandor: 135000,
+                awalPekerja: 30,
+                awalMandor: 3,
+                awalProd: 25.0,
+                simPekerja: 35,
+                simMandor: 3
+            }
+        };
+
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(angka);
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-brand-600', 'text-brand-700');
+                btn.classList.add('border-transparent', 'text-slate-600');
+            });
+
+            const targetContent = document.getElementById('content-' + tabName);
+            if (targetContent) targetContent.classList.remove('hidden');
+
+            const targetBtn = document.getElementById('tab-' + tabName);
+            if (targetBtn) {
+                targetBtn.classList.remove('border-transparent', 'text-slate-600');
+                targetBtn.classList.add('border-brand-600', 'text-brand-700');
+            }
+        }
+
+        function safeSetText(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text;
+        }
+
+        function safeSetHTML(id, html) {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = html;
+        }
+
+        function safeSetValue(id, val) {
+            const el = document.getElementById(id);
+            if (el) el.value = val;
+        }
+
+        function safeSetClass(id, className) {
+            const el = document.getElementById(id);
+            if (el) el.className = className;
+        }
+
+        function updateIdentitasProyek() {
+            const nama = document.getElementById('inputNamaProyek').value || "Kalkulator produktivitas";
+            const noKontrak = document.getElementById('inputNoKontrak').value || "-";
+            const lokasi = document.getElementById('inputLokasi').value || "-";
+
+            safeSetText('headerNamaProyek', nama);
+            safeSetText('headerNoKontrak', `No. Kontrak: ${noKontrak}`);
+            safeSetText('headerLokasi', `Lokasi: ${lokasi}`);
+
+            safeSetText('printJudulProyek', nama.toUpperCase());
+            safeSetText('printSubProyek', `No. Kontrak: ${noKontrak} | Lokasi: ${lokasi}`);
+            safeSetText('repNamaProyek', nama);
+        }
+
+        function muatPresetProyek() {
+            const sel = document.getElementById('presetSelector').value;
+            const p = presets[sel] || presets.custom;
+
+            safeSetValue('inputNamaProyek', p.nama);
+            safeSetValue('inputNoKontrak', p.nokontrak);
+            safeSetValue('inputLokasi', p.lokasi);
+
+            safeSetValue('volume', p.volume);
+            safeSetValue('durasiRencana', p.durasi);
+            safeSetValue('koefAhspPekerja', p.koefPekerja);
+            safeSetValue('koefAhspMandor', p.koefMandor);
+            safeSetValue('upahPekerja', p.upahPekerja);
+            safeSetValue('upahMandor', p.upahMandor);
+
+            safeSetValue('awalPekerja', p.awalPekerja);
+            safeSetValue('awalMandor', p.awalMandor);
+            safeSetValue('awalProdHarian', p.awalProd);
+
+            safeSetValue('simPekerja', p.simPekerja);
+            safeSetValue('simMandor', p.simMandor);
+
+            updateIdentitasProyek();
+            hitungSimulasi();
+        }
+
+        function toggleAutoBudget() {
+            const chk = document.getElementById('chkAutoBudget');
+            const inputAnggaran = document.getElementById('anggaranKontrakInput');
+            if (chk && inputAnggaran) {
+                if (chk.checked) {
+                    inputAnggaran.readOnly = true;
+                    inputAnggaran.classList.add('bg-amber-50');
+                } else {
+                    inputAnggaran.readOnly = false;
+                    inputAnggaran.classList.remove('bg-amber-50');
+                }
+            }
+            hitungSimulasi();
+        }
+
+        function toggleSyncTarget() {
+            const chk = document.getElementById('chkSyncTarget');
+            const inputKoefPekerja = document.getElementById('koefProdPekerja');
+            if (chk && inputKoefPekerja) {
+                if (chk.checked) {
+                    inputKoefPekerja.readOnly = true;
+                    inputKoefPekerja.classList.add('bg-slate-100');
+                } else {
+                    inputKoefPekerja.readOnly = false;
+                    inputKoefPekerja.classList.remove('bg-slate-100');
+                }
+            }
+            hitungSimulasi();
+        }
+
+        function hitungSimulasi() {
+            const getNum = (id) => {
+                const el = document.getElementById(id);
+                return el ? (parseFloat(el.value) || 0) : 0;
+            };
+
+            // 1. Parameter Utama
+            const vol = getNum('volume');
+            const durasiRencana = getNum('durasiRencana');
+            const koefAhspPekerja = getNum('koefAhspPekerja');
+            const koefAhspMandor = getNum('koefAhspMandor');
+            const upahPekerja = getNum('upahPekerja');
+            const upahMandor = getNum('upahMandor');
+
+            // Plafon Anggaran Upah Kontrak
+            const chkAutoBudget = document.getElementById('chkAutoBudget');
+            let anggaranKontrak = 0;
+
+            if (chkAutoBudget && chkAutoBudget.checked) {
+                // Formula AHSP: Vol * (KoefPekerja * UpahPekerja + KoefMandor * UpahMandor)
+                anggaranKontrak = vol * ((koefAhspPekerja * upahPekerja) + (koefAhspMandor * upahMandor));
+                safeSetValue('anggaranKontrakInput', Math.round(anggaranKontrak));
+            } else {
+                anggaranKontrak = getNum('anggaranKontrakInput');
+            }
+
+            safeSetText('headerAnggaranKontrak', formatRupiah(anggaranKontrak));
+            safeSetText('headerTargetSummary', `Target: ${vol.toLocaleString('id-ID')} m³ / ${durasiRencana} Hari`);
+
+            // Target Harian Total
+            const targetHarian = durasiRencana > 0 ? vol / durasiRencana : 0;
+            safeSetValue('targetHarianInput', targetHarian.toFixed(2) + " m³/hari");
+            safeSetText('bannerTargetHarian', targetHarian.toFixed(2) + " m³/hari");
+            safeSetText('bannerTargetFormula', `Berdasarkan ${vol.toLocaleString('id-ID')} m³ / ${durasiRencana} Hari`);
+
+            // 2. Baseline Eksisting
+            const awalPekerja = getNum('awalPekerja');
+            const awalMandor = getNum('awalMandor');
+            const awalProdHarian = getNum('awalProdHarian');
+
+            // 3. Formasi Usulan
+            const simPekerja = getNum('simPekerja');
+            const simMandor = getNum('simMandor');
+            const chkSync = document.getElementById('chkSyncTarget');
+
+            let koefProdPekerja = getNum('koefProdPekerja');
+            if (chkSync && chkSync.checked && simPekerja > 0) {
+                koefProdPekerja = targetHarian / simPekerja;
+                safeSetValue('koefProdPekerja', koefProdPekerja.toFixed(4));
+            }
+
+            // Kenaikan vs baseline
+            const awalProdIndiv = awalPekerja > 0 ? awalProdHarian / awalPekerja : 0;
+            const persenKenaikan = awalProdIndiv > 0 ? ((koefProdPekerja - awalProdIndiv) / awalProdIndiv) * 100 : 0;
+            const sign = persenKenaikan >= 0 ? "+" : "";
+            safeSetValue('persenKenaikanDisplay', sign + persenKenaikan.toFixed(1) + "%");
+
+            // Total Usulan Prod Harian
+            const simProdHarian = simPekerja * koefProdPekerja;
+            safeSetValue('simProdHarianDisplay', simProdHarian.toFixed(2) + " m³/hari");
+            safeSetText('bannerUsulanHarian', simProdHarian.toFixed(2) + " m³/hari");
+
+            // Status Banner Kapasitas
+            const rasioKapasitas = targetHarian > 0 ? (simProdHarian / targetHarian) * 100 : 0;
+            if (simProdHarian >= (targetHarian - 0.05)) {
+                safeSetClass('bannerStatusKapasitas', "text-xs text-emerald-400 mt-0.5 font-medium");
+                safeSetText('bannerStatusKapasitas', `Memenuhi Target (${rasioKapasitas.toFixed(1)}%)`);
+            } else {
+                safeSetClass('bannerStatusKapasitas', "text-xs text-rose-400 mt-0.5 font-medium");
+                safeSetText('bannerStatusKapasitas', `Di Bawah Target (${rasioKapasitas.toFixed(1)}%)`);
+            }
+
+            // --- WAKTU & KETERLAMBATAN ---
+            const awalHari = awalProdHarian > 0 ? vol / awalProdHarian : 0;
+            const usulanHari = simProdHarian > 0 ? vol / simProdHarian : 0;
+
+            const awalHariTerlambat = Math.max(0, awalHari - durasiRencana);
+            const usulanHariTerlambat = Math.max(0, usulanHari - durasiRencana);
+
+            // --- BIAYA REALISASI ---
+            const awalBiayaPekerja = awalPekerja * awalHari * upahPekerja;
+            const awalBiayaMandor = awalMandor * awalHari * upahMandor;
+            const awalTotalBiaya = awalBiayaPekerja + awalBiayaMandor;
+
+            const usulanBiayaPekerja = simPekerja * durasiRencana * upahPekerja;
+            const usulanBiayaMandor = simMandor * durasiRencana * upahMandor;
+            const usulanTotalBiaya = usulanBiayaPekerja + usulanBiayaMandor;
+
+            const awalDeviasi = awalTotalBiaya - anggaranKontrak;
+            const usulanSisa = anggaranKontrak - usulanTotalBiaya;
+
+            // Update Cards
+            safeSetText('cardAwalHeader', `FORMASI AWAL (${awalPekerja}+${awalMandor})`);
+            safeSetText('cardAwalWaktu', awalHari.toFixed(1) + " Hari");
+            safeSetHTML('badgeAwalWaktu', awalHariTerlambat > 0 
+                ? `<span class="inline-block bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded">TERLAMBAT +${awalHariTerlambat.toFixed(1)} HARI</span>`
+                : `<span class="inline-block bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded">TEPAT WAKTU</span>`);
+
+            safeSetText('cardAwalBiaya', formatRupiah(awalTotalBiaya));
+            safeSetHTML('badgeAwalBiaya', awalDeviasi > 0
+                ? `<span class="inline-block bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded">OVER BUDGET (+${formatRupiah(awalDeviasi)})</span>`
+                : `<span class="inline-block bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded">EFISIEN (${formatRupiah(Math.abs(awalDeviasi))})</span>`);
+
+            safeSetText('cardUsulanHeader', `FORMASI USULAN (${simPekerja}+${simMandor})`);
+            safeSetText('cardUsulanWaktu', usulanHari.toFixed(1) + " Hari");
+            safeSetHTML('badgeUsulanWaktu', usulanHariTerlambat > 0
+                ? `<span class="inline-block bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded">TERLAMBAT +${usulanHariTerlambat.toFixed(1)} HARI</span>`
+                : `<span class="inline-block bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded">TEPAT WAKTU (${durasiRencana} HARI)</span>`);
+
+            safeSetText('cardUsulanBiaya', formatRupiah(usulanTotalBiaya));
+            safeSetHTML('badgeUsulanBiaya', usulanSisa >= 0
+                ? `<span class="inline-block bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded">HEMAT / SISA (${formatRupiah(usulanSisa)})</span>`
+                : `<span class="inline-block bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded">OVER BUDGET (+${formatRupiah(Math.abs(usulanSisa))})</span>`);
+
+            // Update Tabel
+            safeSetText('tblAwalFormasi', `${awalPekerja} Pekerja / ${awalMandor} Mandor`);
+            safeSetText('tblUsulanFormasi', `${simPekerja} Pekerja / ${simMandor} Mandor`);
+
+            safeSetText('tblAwalProd', `${awalProdHarian.toFixed(2)} m³/hari`);
+            safeSetText('tblUsulanProd', `${simProdHarian.toFixed(2)} m³/hari`);
+
+            safeSetText('tblAwalProdIndiv', `${awalProdIndiv.toFixed(3)} m³/orang/hari`);
+            safeSetText('tblUsulanProdIndiv', `${koefProdPekerja.toFixed(3)} m³/orang/hari`);
+
+            safeSetText('tblKenaikanProd', `${sign}${persenKenaikan.toFixed(1)}%`);
+
+            const awalBiayaHarian = (awalPekerja * upahPekerja) + (awalMandor * upahMandor);
+            const usulanBiayaHarian = (simPekerja * upahPekerja) + (simMandor * upahMandor);
+            safeSetText('tblAwalBiayaHarian', `${formatRupiah(awalBiayaHarian)} / hari`);
+            safeSetText('tblUsulanBiayaHarian', `${formatRupiah(usulanBiayaHarian)} / hari`);
+
+            safeSetText('tblAwalWaktu', `${awalHari.toFixed(2)} Hari`);
+            safeSetText('tblUsulanWaktu', `${usulanHari.toFixed(2)} Hari`);
+
+            safeSetText('tblAwalHariTerlambat', awalHariTerlambat > 0 ? `+${awalHariTerlambat.toFixed(2)} Hari` : "0 Hari");
+            safeSetText('tblUsulanHariTerlambat', usulanHariTerlambat > 0 ? `+${usulanHariTerlambat.toFixed(2)} Hari` : "0 Hari (Tepat Waktu)");
+
+            safeSetText('tblAwalBiayaTotal', formatRupiah(awalTotalBiaya));
+            safeSetText('tblUsulanBiayaTotal', formatRupiah(usulanTotalBiaya));
+
+            safeSetText('tblAwalDeviasi', awalDeviasi > 0 ? `+${formatRupiah(awalDeviasi)} (Pembengkakan)` : `Sisa ${formatRupiah(Math.abs(awalDeviasi))}`);
+            safeSetText('tblUsulanDeviasi', usulanSisa >= 0 ? `Sisa ${formatRupiah(usulanSisa)} (Hemat)` : `+${formatRupiah(Math.abs(usulanSisa))} (Over Budget)`);
+
+            // Update Tab 4 Report Fields
+            safeSetText('repVolume', `${vol.toLocaleString('id-ID')} m³`);
+            safeSetText('repDurasi', `${durasiRencana} Hari`);
+            safeSetText('repTargetHarian', `${targetHarian.toFixed(2)} m³/hari`);
+            safeSetText('repFormasiUsulan', `${simPekerja} Pekerja & ${simMandor} Mandor`);
+            safeSetText('repProdPekerja', `${koefProdPekerja.toFixed(3)} m³/orang/hari (${sign}${persenKenaikan.toFixed(1)}%)`);
+            safeSetText('repBiayaUsulan', formatRupiah(usulanTotalBiaya));
+            safeSetText('repAnggaranKontrak', formatRupiah(anggaranKontrak));
+
+            // Kesimpulan Text
+            const namaProyek = document.getElementById('inputNamaProyek').value || "proyek ini";
+            safeSetText('textKesimpulan', `Untuk menyelesaikan ${namaProyek} dengan total volume ${vol.toLocaleString('id-ID')} m³ tepat dalam ${durasiRencana} hari, dibutuhkan produktivitas harian minimum sebesar ${targetHarian.toFixed(2)} m³/hari. Dengan formasi usulan ${simPekerja} pekerja dan ${simMandor} mandor serta target individu ${koefProdPekerja.toFixed(3)} m³/org/hari, estimasi biaya realisasi upah mencapai ${formatRupiah(usulanTotalBiaya)} (${usulanSisa >= 0 ? 'hemat ' + formatRupiah(usulanSisa) + ' dari plafon anggaran' : 'melebihi anggaran sebesar ' + formatRupiah(Math.abs(usulanSisa))}). Membiarkan formasi baseline (${awalPekerja}+${awalMandor}) berpotensi menimbulkan keterlambatan ${awalHariTerlambat.toFixed(1)} hari.`);
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            updateIdentitasProyek();
+            hitungSimulasi();
+        });
+    </script>
+</body>
+</html>
