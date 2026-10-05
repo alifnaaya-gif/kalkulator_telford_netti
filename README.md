@@ -1,0 +1,2 @@
+# kalkulator_telford_netti
+kalkulator produktivitas telford
